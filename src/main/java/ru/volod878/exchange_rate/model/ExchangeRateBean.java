@@ -2,6 +2,9 @@ package ru.volod878.exchange_rate.model;
 
 import java.util.Map;
 
+/**
+ * Класс-модель курсов валют
+ */
 public class ExchangeRateBean {
     private String disclaimer;
     private String license;

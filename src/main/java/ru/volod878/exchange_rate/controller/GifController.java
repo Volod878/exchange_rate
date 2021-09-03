@@ -4,8 +4,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.view.RedirectView;
 import ru.volod878.exchange_rate.client.GiphyClient;
-import ru.volod878.exchange_rate.model.GiphyBean;
 
+import java.util.Map;
+
+/**
+ * Класс-контроллер для работы с данными gif
+ */
 @RestController
 @RequestMapping("/gif")
 public class GifController {
@@ -17,9 +21,15 @@ public class GifController {
         this.client = client;
     }
 
+    /**
+     * Получаем данные с информацией об одном случайном gif который соответствует тегу
+     * @param apiKey ключ для аутентификации на внешнем сервере
+     * @param tag тег по которому будем искать gif
+     * @return представление gif
+     */
     @GetMapping(value = "/{tag}")
-    public RedirectView getRichGif(@RequestParam("api_key") String apiKey, @PathVariable("tag") String tag) {
-        GiphyBean giphyBean = client.getRandomGif(apiKey, tag);
-        return new RedirectView(giphyBean.getData().get("image_url").toString());
+    public RedirectView getRandomGifByTag(@RequestParam("api_key") String apiKey, @PathVariable("tag") String tag) {
+        Map<String, ?> data = client.getRandomGifByTag(apiKey, tag).get("data");
+        return new RedirectView(data.get("image_url").toString());
     }
 }
