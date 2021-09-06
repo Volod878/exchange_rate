@@ -24,12 +24,12 @@ public interface OpenExchangeRatesClient {
 
     /**
      * Получаем данные с внешнего сервера по всем курсам валют на указанную дату
-     * @param data получим курсы валют на эту дату
+     * @param date получим курсы валют на эту дату
      * @param appID идентификатор для аутентификации на внешнем сервере курсов валют
      * @return данные по курсам валют сохраненные в объекте ExchangeRateBean
      */
-    @GetMapping("${open_exchange_rate.historical}/{data}.json")
-    ExchangeRateBean getYesterdayExchangeRate(@PathVariable(name = "data") String data,
+    @GetMapping("${open_exchange_rate.historical}/{date}.json")
+    ExchangeRateBean getYesterdayExchangeRate(@PathVariable(name = "date") String date,
                                               @RequestParam("app_id") String appID);
 
     /**

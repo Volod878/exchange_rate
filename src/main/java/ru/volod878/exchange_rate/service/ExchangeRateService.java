@@ -12,6 +12,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * Класс-сервис.
@@ -23,6 +24,9 @@ public class ExchangeRateService {
     @Value("${exchange_rate.base}")
     private String base;
 
+    @Value("${server.port}")
+    private String port;
+
     private final OpenExchangeRatesClient client;
 
     @Autowired
@@ -31,16 +35,20 @@ public class ExchangeRateService {
     }
 
     /**
-     * Получаем данные по всем курсам валют на сегодняшний день
+     * Получаем данные по всем курсам валют на сегодняшний день.
+     * Устанавливаем переменную base в качестве базовой валюты.
      * @param appID идентификатор для аутентификации на внешнем сервере курсов валют
      * @return данные по курсам валют сохраненные в объекте ExchangeRateBean
      */
     public ExchangeRateBean getExchangeRate(String appID) {
-        return client.getExchangeRate(appID);
+        ExchangeRateBean tempRateBean = client.getExchangeRate(appID);
+
+        return setBaseCurrency(tempRateBean);
     }
 
     /**
-     * Получаем данные по всем курсам валют на вчерашний день
+     * Получаем данные по всем курсам валют на вчерашний день.
+     * Устанавливаем переменную base в качестве базовой валюты.
      * @param appID идентификатор для аутентификации на внешнем сервере курсов валют
      * @return данные по курсам валют сохраненные в объекте ExchangeRateBean
      */
@@ -48,7 +56,33 @@ public class ExchangeRateService {
         // Получаем вчерашнюю дату по UTC внешнего сервера
         String yesterday = LocalDate.now(ZoneId.of("UTC")).minusDays(1).toString();
 
-        return client.getYesterdayExchangeRate(yesterday, appID);
+        ExchangeRateBean tempRateBean = client.getYesterdayExchangeRate(yesterday, appID);
+
+        return setBaseCurrency(tempRateBean);
+    }
+
+    /**
+     * Устанавливаем переменную base в качестве базовой валюты.
+     * @param exchangeRateBean модель кусов валют с внешнего сервера
+     * @return новую модель ExchangeRateBean с базовой валютой base
+     */
+    private ExchangeRateBean setBaseCurrency(ExchangeRateBean exchangeRateBean) {
+        String disclaimer = exchangeRateBean.getDisclaimer();
+        String license = exchangeRateBean.getLicense();
+        long timestamp = exchangeRateBean.getTimestamp();
+        base = base.toUpperCase();
+        Map<String, Double> rates = new TreeMap<>();
+
+        RoundingMode halfUp = RoundingMode.HALF_UP;
+        BigDecimal rate = BigDecimal.ONE
+                .divide(BigDecimal.valueOf(exchangeRateBean.getRates().get(base)), 20, halfUp);
+
+        exchangeRateBean.getRates().forEach((k, v) ->
+                rates.put(k, rate.multiply(
+                        BigDecimal.valueOf(v)).doubleValue())
+        );
+
+        return new ExchangeRateBean(disclaimer, license, timestamp, base, rates);
     }
 
     /**
@@ -70,26 +104,12 @@ public class ExchangeRateService {
         Map<String, String> exchangeRatesMap = getAllCodesExchangeRate();
         if (!exchangeRatesMap.containsKey(currency))
             throw new NoSuchExchangeRatesException("Currency code is incorrect." +
-                    " To view the current data, follow the link: http://localhost:8080/currencies");
+                    " To view the current data, follow the link: http://localhost:" + port + "/currencies");
 
-        // Получаем данные по курсам за сегодня и вчера
+        // Получаем данные по курсам за последние два дня
         ExchangeRateBean exchangeRateToday = getExchangeRate(appID);
         ExchangeRateBean exchangeRateYesterday = getYesterdayExchangeRate(appID);
 
-        RoundingMode halfUp = RoundingMode.HALF_UP;
-
-        // Вычисляем сегодняшний курс currency по отношению к курсу base
-        BigDecimal rateToday = BigDecimal.ONE
-                .divide(BigDecimal.valueOf(exchangeRateToday.getRates().get(base)), 10, halfUp);
-        Double currencyRateToday = exchangeRateToday.getRates().get(currency);
-        currencyRateToday = rateToday.multiply(BigDecimal.valueOf(currencyRateToday)).doubleValue();
-
-        // Вычисляем вчерашний курс currency по отношению к курсу base
-        BigDecimal rateYesterday = BigDecimal.ONE
-                .divide(BigDecimal.valueOf(exchangeRateYesterday.getRates().get(base)), 10, halfUp);
-        Double currencyRateYesterday = exchangeRateYesterday.getRates().get(currency);
-        currencyRateYesterday = rateYesterday.multiply(BigDecimal.valueOf(currencyRateYesterday)).doubleValue();
-
-        return currencyRateToday < currencyRateYesterday;
+        return exchangeRateToday.getRates().get(currency) < exchangeRateYesterday.getRates().get(currency);
     }
 }

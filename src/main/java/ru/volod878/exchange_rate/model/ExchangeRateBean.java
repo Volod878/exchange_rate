@@ -1,6 +1,7 @@
 package ru.volod878.exchange_rate.model;
 
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Класс-модель курсов валют
@@ -61,5 +62,22 @@ public class ExchangeRateBean {
 
     public void setRates(Map<String, Double> rates) {
         this.rates = rates;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof ExchangeRateBean)) return false;
+        ExchangeRateBean that = (ExchangeRateBean) o;
+        return getTimestamp() == that.getTimestamp()
+                && Objects.equals(getDisclaimer(), that.getDisclaimer())
+                && Objects.equals(getLicense(), that.getLicense())
+                && Objects.equals(getBase(), that.getBase())
+                && Objects.equals(getRates(), that.getRates());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getDisclaimer(), getLicense(), getTimestamp(), getBase(), getRates());
     }
 }
