@@ -9,12 +9,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-import ru.volod878.exchange_rate.configuration.WireMockConfig;
 import ru.volod878.exchange_rate.model.ExchangeRateBean;
 import ru.volod878.exchange_rate.util.FileLoader;
 
@@ -30,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @ActiveProfiles("test")
 @EnableConfigurationProperties
 @ExtendWith(SpringExtension.class)
-@ContextConfiguration(classes = { WireMockConfig.class })
+@ContextConfiguration(classes = { OpenExchangeRatesClientIntegrationTest.WireMockConfig.class })
 @DisplayName("Integration-level testing for OpenExchangeRatesClientIntegrationTest")
 class OpenExchangeRatesClientIntegrationTest {
 
@@ -116,5 +117,18 @@ class OpenExchangeRatesClientIntegrationTest {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    @TestConfiguration
+    static class WireMockConfig {
+
+        @Autowired
+        private WireMockServer wireMockServer;
+
+        @Bean(initMethod = "start", destroyMethod = "stop")
+        protected WireMockServer mockService() {
+            return new WireMockServer(3333);
+        }
+
     }
 }
